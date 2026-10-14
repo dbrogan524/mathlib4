@@ -32,6 +32,8 @@ variable (F : CategoryTheory.Filtration (ModuleCat.of ℂ (ℂ ⊗[R] V)) ℤᵒ
 variable (W : CategoryTheory.Filtration (ModuleCat.of R V) ℤ)
 
 
+
+-- I should define the conjugation map and prove some of its properties in this namespace.
 namespace Complexification
 
 open scoped TensorProduct
