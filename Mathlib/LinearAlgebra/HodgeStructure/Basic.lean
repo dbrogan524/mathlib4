@@ -90,6 +90,11 @@ end Conjugation
 section PureHodgeStructures
 -- We start with integral, rational, and real Hodge structures
 
+/- Christian suggested defining complex Hodge structures using two filtrations F and Fbar
+which together satisfy the isCompl condition for the correct indices. Maybe this is a better
+starting place, and maybe I can infer that Fbar is the conjugate of F when I start with a module
+over ℤ, ℚ, or ℝ. -/
+
 /-- A Hodge filtration `F` of wieght `n` is a bounded decreasing filtration such that
 `F p` and `F q` are conjugate-complementary if `p + q = n + 1`. -/
 class IsPureHodgeFiltration
@@ -120,7 +125,7 @@ section Maps
 variable {A : Type*} [CommRing A] [Algebra A ℝ] [FaithfulSMul A ℝ]
 variable {V : Type*} [AddCommGroup V] [Module A V] [IsNoetherian A V]
 
-
+/-- Maps of pure hodge structures are just maps of the filtered modules -/
 class PureHodgeMap [H : PureHodgeStructure A V]
   {W : Type*} [AddCommGroup W] [Module A W] [IsNoetherian A W]
   [K : PureHodgeStructure A W] where
@@ -150,8 +155,8 @@ variable (H : PureHodgeStructure A V)
 --theorem GradedPiece_iso_HodgePiece : ∀ (p : ℤ), H.GradedPiece p ≃ₗ[ℂ] H.HodgePiece p := sorry
 
 
--- Chat generated this. Rewrite more cleanly.
-theorem Hodge_decomp_finite :
+-- Chat generated this. Rewrite more cleanly. Or write a different lemma that would be useful.
+lemma Hodge_decomp_finite :
     Module.Finite ℂ (⨁ (p : ℤ), H.HodgePiece p) := by
   -- Noetherian implies finitely generated; base change preserves this.
   have : Module.Finite ℂ (ℂ ⊗[A] V) := inferInstance
@@ -184,7 +189,7 @@ theorem Hodge_decomp_finite :
       infer_instance
     exact Subsingleton.elim _ _
 
-lemma HodgePeicesDisjoint {p q : ℤ} : p ≠ q →  (H.HodgePiece p) ⊓ (H.HodgePiece q) = ⊥ := by
+lemma hodge_piece_inf_eq_bot {p q : ℤ} : p ≠ q →  (H.HodgePiece p) ⊓ (H.HodgePiece q) = ⊥ := by
   intro hp
   wlog! h : q < p generalizing p q
   · have h' : p < q := lt_of_le_of_ne h hp
@@ -205,27 +210,63 @@ lemma HodgePeicesDisjoint {p q : ℤ} : p ≠ q →  (H.HodgePiece p) ⊓ (H.Hod
 
 
 
-
+#check DirectSum.coeLinearMap_of
+#check DirectSum.IsInternal
+#check DirectSum.isInternal_biSup_submodule_of_iSupIndep
+#check DirectSum.isInternal_submodule_iff_iSupIndep_and_iSup_eq_top
+#check DirectSum.isInternal_submodule_of_iSupIndep_of_iSup_eq_top
+#check sSupIndep
+#check iSupIndep_map_orderIso_iff
+#check iSupIndep.linearEquiv
+#check Pairwise
+#check Function.onFun
+#check Submodule.completeLattice
+#check Order.Frame
+#check Subtype.restrict
+#check LinearMap.range_eq_map
+#check Submodule.map
+#check DirectSum.setToSet
+#check Set.univ
+#check DirectSum.lsetToSet
+#check Set.Iic
+#check DirectSum.of
+#check DirectSum.unique
+#check DirectSum.component
+#check DirectSum.map
 
 
 noncomputable def invDecompMap : (⨁ (p : ℤ), H.HodgePiece p) →ₗ[ℂ] ℂ ⊗[A] V :=
-  DirectSum.toModule ℂ ℤ (ℂ ⊗[A] V) (fun p ↦ (H.HodgePiece p).subtype)
+  DirectSum.coeLinearMap H.HodgePiece
 
-lemma invDecompMap_inj : Function.Injective <| invDecompMap H := by
-  rw[injective_iff_map_eq_zero]
-  intro v hv
+def inc (p : ℤ) : Set.Iic p → ℤ := fun p ↦ p
+
+def inc' (p : ℤ) : (⨁ (r : Set.Iic p), H.HodgePiece r) →ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
+  intro i
+  --DirectSum.setToSet H.HodgePiece (Set.Iic p) (Set.univ) (Set.subset_univ _)
+
+theorem test : ∀ (p : ℤ), (invDecompMap H)'' (⨁ (r : Set.Iic p), H.HodgePiece r) = H.filt p := by
 
 
 
+
+/-
+lemma invDecompMap_equiv : (⨁ (p : ℤ), H.HodgePiece p) ≃ₗ[ℂ] ℂ ⊗[A] V := by
+  have : Pairwise (Function.onFun Disjoint H.HodgePiece) :=
+    fun ?_ ?_ hpq ↦ disjoint_iff.mpr (hodge_piece_inf_eq_bot H hpq)
+  apply iSupIndep.linearEquiv
+  have : iSupIndep H.HodgePiece := iSupIndep_iff_pairwiseDisjoint.2 this
 
 
 
 noncomputable def PureHodgeStructure.decomp : ℂ ⊗[A] V ≃ₗ[ℂ] ⨁ (p : ℤ), H.HodgePiece p := by
-  have h1 := Hodge_decomp_finite H
-  apply LinearEquiv.symm
-  apply LinearEquiv.ofInjectiveOfFinrankEq <| invDecompMap H
+  apply (iSupIndep.linearEquiv ?_ ?_).symm
+  change iSupIndep H.HodgePiece
+  · rw[iSupIndep_iff_pairwiseDisjoint]
+-/
 
 
+
+#check DirectSum.coeLinearMap
 
 end HodgeDecomposition
 
