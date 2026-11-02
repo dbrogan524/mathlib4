@@ -233,18 +233,48 @@ lemma hodge_piece_inf_eq_bot {p q : ℤ} : p ≠ q →  (H.HodgePiece p) ⊓ (H.
 #check DirectSum.unique
 #check DirectSum.component
 #check DirectSum.map
+#check inf_sup_assoc_of_le
+#check eq_sup_of_le
+
+
+lemma partial_sup : ∀ (p : ℤ), H.HodgePiece p ⊔ (H.filt (p+1)) = H.filt p :=
+  inf_sup_assoc_of_le (H.filt p)
+
+
+
+
+
+lemma partial_Hodge_decomp : ∀ (p : ℤ), H.filt p = (H.HodgePiece p ⊕ H.filt (p+1)) := by
+
+
+
 
 
 noncomputable def invDecompMap : (⨁ (p : ℤ), H.HodgePiece p) →ₗ[ℂ] ℂ ⊗[A] V :=
   DirectSum.coeLinearMap H.HodgePiece
 
-def inc (p : ℤ) : Set.Iic p → ℤ := fun p ↦ p
+noncomputable def maptest (p : ℤ) : (⨁ (r : Set.Ici p), H.HodgePiece r) →ₗ[ℂ] ℂ ⊗[A] V :=
+  DirectSum.coeLinearMap (fun r : Set.Ici p ↦ H.HodgePiece r)
 
-def inc' (p : ℤ) : (⨁ (r : Set.Iic p), H.HodgePiece r) →ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
+
+-- GPT generated
+noncomputable def toFiltration (p : ℤ) :
+    (⨁ r : Set.Ici p, H.HodgePiece r) →ₗ[ℂ] H.filt p :=
+  DirectSum.toModule ℂ _ _ (fun r ↦
+    Submodule.inclusion
+      (show H.HodgePiece r ≤ H.filt p from
+        inf_le_left.trans (H.isHodge.decreasing r.property)))
+
+
+
+
+def inc (p : ℤ) : Set.Ici p → ℤ := fun p ↦ p
+
+def inc' (p : ℤ) : (⨁ (r : Set.Ici p), H.HodgePiece r) →ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
   intro i
   --DirectSum.setToSet H.HodgePiece (Set.Iic p) (Set.univ) (Set.subset_univ _)
 
-theorem test : ∀ (p : ℤ), (invDecompMap H)'' (⨁ (r : Set.Iic p), H.HodgePiece r) = H.filt p := by
+theorem test : ∀ (p : ℤ), (invDecompMap H)'' (⨁ (r : Set.Ici p), H.HodgePiece r) = H.filt p := by
 
 
 
