@@ -154,6 +154,26 @@ variable (H : PureCHodgeStructure V)
 
 --theorem GradedPiece_iso_HodgePiece : ∀ (p : ℤ), H.GradedPiece p ≃ₗ[ℂ] H.HodgePiece p := sorry
 
+
+noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)) →ₗ[ℂ] H.filt p :=
+  (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
+    (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
+
+lemma partialDecompMap_injective : ∀ (p : ℤ), Function.Injective (partialDecompMap H p) := by
+  intro p
+  rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+  rintro ⟨x, y⟩ hxy
+  have hsum : (x : V) + (y : V) = 0 := congrArg Subtype.val hxy
+  have hx : (x : V) = 0 := Submodule.disjoint_def.mp (H.isHodge.is_compl p).disjoint x x.property (by
+    have heq : (x : V) = -(y : V) := eq_neg_of_add_eq_zero_left hsum
+    rw [heq]
+    exact (H.filt (p + 1)).neg_mem y.property)
+  have hy : (y : V) = 0 := by simpa [hx] using hsum
+  exact Prod.ext (Subtype.ext hx) (Subtype.ext hy)
+
+
+
+--GPT generated
 noncomputable def partialDecompIso (p : ℤ) :
     (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
   let f : H.HodgePiece p × H.filt (p + 1) →ₗ[ℂ] H.filt p :=
