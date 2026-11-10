@@ -154,7 +154,8 @@ variable (H : PureCHodgeStructure V)
 
 --theorem GradedPiece_iso_HodgePiece : ∀ (p : ℤ), H.GradedPiece p ≃ₗ[ℂ] H.HodgePiece p := sorry
 
-
+-- The goal is to show F p = H^{p,n-p} ⊕ F^{p+1} and then use induction to prove the
+-- full Hodge decomposition.
 noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)) →ₗ[ℂ] H.filt p :=
   (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
     (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
