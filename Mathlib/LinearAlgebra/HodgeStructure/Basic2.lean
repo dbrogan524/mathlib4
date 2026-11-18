@@ -141,8 +141,6 @@ class PureCHodgeMap [H : PureCHodgeStructure V]
     strict_bar : Prop := ∀ p : ℤ, (H.filtBar p).map toFun ≤ K.filtBar p
 
 
-
-
 end Maps
 
 section HodgeDecomposition
@@ -160,15 +158,27 @@ noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)
   (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
     (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
 
+lemma disjoint_HodgePiece_filt : ∀ (p : ℤ), Disjoint (H.HodgePiece p) (H.filt (p + 1)) := by
+  intro p
+  apply Disjoint.mono_left (b := H.filtBar (H.weight - p)) inf_le_right
+  simpa using (H.isHodge.is_compl (p + 1)).disjoint.symm
+
+
+#check mem_of_le_of_mem
+#check Submodule.mem_bot
+#check disjoint_iff.mp
+
 lemma partialDecompMap_injective : ∀ (p : ℤ), Function.Injective (partialDecompMap H p) := by
   intro p
   rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
   rintro ⟨x, y⟩ hxy
   have hsum : (x : V) + (y : V) = 0 := congrArg Subtype.val hxy
-  have hx : (x : V) = 0 := Submodule.disjoint_def.mp (H.isHodge.is_compl p).disjoint x x.property (by
+  have hx1 : (x : V) ∈ H.filtBar (H.weight - p) := mem_of_le_of_mem inf_le_right x.property
+  have hx2 : (x : V) ∈ H.filt (p + 1) := by
     have heq : (x : V) = -(y : V) := eq_neg_of_add_eq_zero_left hsum
     rw [heq]
-    exact (H.filt (p + 1)).neg_mem y.property)
+    exact (H.filt (p + 1)).neg_mem y.property
+  have hx : (x : V) = 0 :=
   have hy : (y : V) = 0 := by simpa [hx] using hsum
   exact Prod.ext (Subtype.ext hx) (Subtype.ext hy)
 
@@ -238,17 +248,19 @@ noncomputable def partialDecompIso (p : ℤ) :
 #check DirectSum.component
 #check DirectSum.map
 #check inf_sup_assoc_of_le
-#check eq_sup_of_le
+#check IsModularLattice
 
 
-lemma partial_sup : ∀ (p : ℤ), H.HodgePiece p ⊔ (H.filt (p+1)) = H.filt p :=
-  inf_sup_assoc_of_le (H.filt p)
+lemma partial_sup : ∀ (p : ℤ), H.HodgePiece p ⊔ (H.filt (p+1)) = H.filt p := by
+  intro p
+  have := inf_sup_assoc_of_le (H.filt (p))
 
 
 
 
 
-lemma partial_Hodge_decomp : ∀ (p : ℤ), H.filt p = (H.HodgePiece p ⊕ H.filt (p+1)) := by
+
+--lemma partial_Hodge_decomp : ∀ (p : ℤ), H.filt p = (H.HodgePiece p ⊕ H.filt (p+1)) := by
 
 
 
