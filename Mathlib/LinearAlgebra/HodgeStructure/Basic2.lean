@@ -158,34 +158,51 @@ noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)
   (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
     (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
 
-lemma disjoint_HodgePiece_filt : ∀ (p : ℤ), Disjoint (H.HodgePiece p) (H.filt (p + 1)) := by
+lemma HodgePiece_inf_filt_eq_bot : ∀ (p : ℤ), (H.HodgePiece p) ⊓ (H.filt (p + 1)) = ⊥ := by
   intro p
+  rw[← disjoint_iff]
   apply Disjoint.mono_left (b := H.filtBar (H.weight - p)) inf_le_right
   simpa using (H.isHodge.is_compl (p + 1)).disjoint.symm
+
+lemma HodgePiece_sup_filt_eq_filt : ∀ (p : ℤ), H.HodgePiece p ⊔ (H.filt (p + 1)) = H.filt p := by
+  intro p
+  calc
+    H.HodgePiece p ⊔ (H.filt (p + 1))
+      = H.filt p ⊓ H.filtBar (H.weight - p) ⊔ H.filt (p + 1) := by rfl
+    _ = H.filt p ⊓ (H.filtBar (H.weight - p) ⊔ H.filt (p + 1)) := by
+      rw[inf_sup_assoc_of_le _ (H.isHodge.decreasing (by omega))]
+    _ = H.filt p ⊓ (H.filtBar (H.weight + 1 - (p + 1)) ⊔ H.filt (p + 1)) := by simp
+    _ = H.filt p ⊓ ⊤ := by rw[(H.isHodge.is_compl (p + 1)).symm.sup_eq_top]
+    _ = H.filt p := by rw [inf_top_eq]
 
 
 #check mem_of_le_of_mem
 #check Submodule.mem_bot
 #check disjoint_iff.mp
+#check LinearMap.ker_coprod_of_disjoint_range
+#check Submodule.ker_subtype
 
-lemma partialDecompMap_injective : ∀ (p : ℤ), Function.Injective (partialDecompMap H p) := by
-  intro p
-  rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
-  rintro ⟨x, y⟩ hxy
-  have hsum : (x : V) + (y : V) = 0 := congrArg Subtype.val hxy
-  have hx1 : (x : V) ∈ H.filtBar (H.weight - p) := mem_of_le_of_mem inf_le_right x.property
-  have hx2 : (x : V) ∈ H.filt (p + 1) := by
-    have heq : (x : V) = -(y : V) := eq_neg_of_add_eq_zero_left hsum
-    rw [heq]
-    exact (H.filt (p + 1)).neg_mem y.property
-  have hx : (x : V) = 0 :=
-  have hy : (y : V) = 0 := by simpa [hx] using hsum
-  exact Prod.ext (Subtype.ext hx) (Subtype.ext hy)
+open LinearMap Submodule
+noncomputable def partialDecompIso (p : ℤ) :
+    (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
+  let i := (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left))
+  let j := (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
+  apply LinearEquiv.ofBijective (i.coprod j) ⟨?_, ?_⟩
+  · show Function.Injective (i.coprod j)
+    rw[← ker_eq_bot, ker_coprod_of_disjoint_range i j, ker_inclusion, ker_inclusion, prod_bot]
+    rw[disjoint_iff, range_inclusion, range_inclusion]
+    exact HodgePiece_inf_filt_eq_bot
+  · show Function.Surjective (i.coprod j)
+    rw[← LinearMap.range_eq_top, range_coprod, range_inclusion, range_inclusion]
+    rw[]
+
+
+
 
 
 
 --GPT generated
-noncomputable def partialDecompIso (p : ℤ) :
+noncomputable def partialDecompIso' (p : ℤ) :
     (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
   let f : H.HodgePiece p × H.filt (p + 1) →ₗ[ℂ] H.filt p :=
     (Submodule.inclusion
@@ -249,12 +266,7 @@ noncomputable def partialDecompIso (p : ℤ) :
 #check DirectSum.map
 #check inf_sup_assoc_of_le
 #check IsModularLattice
-
-
-lemma partial_sup : ∀ (p : ℤ), H.HodgePiece p ⊔ (H.filt (p+1)) = H.filt p := by
-  intro p
-  have := inf_sup_assoc_of_le (H.filt (p))
-
+#check IsModularLattice (Submodule ℂ V)
 
 
 
