@@ -152,11 +152,7 @@ variable (H : PureCHodgeStructure V)
 
 --theorem GradedPiece_iso_HodgePiece : ∀ (p : ℤ), H.GradedPiece p ≃ₗ[ℂ] H.HodgePiece p := sorry
 
--- The goal is to show F p = H^{p,n-p} ⊕ F^{p+1} and then use induction to prove the
--- full Hodge decomposition.
-noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)) →ₗ[ℂ] H.filt p :=
-  (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
-    (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
+
 
 lemma HodgePiece_inf_filt_eq_bot : ∀ (p : ℤ), (H.HodgePiece p) ⊓ (H.filt (p + 1)) = ⊥ := by
   intro p
@@ -175,156 +171,42 @@ lemma HodgePiece_sup_filt_eq_filt : ∀ (p : ℤ), H.HodgePiece p ⊔ (H.filt (p
     _ = H.filt p ⊓ ⊤ := by rw[(H.isHodge.is_compl (p + 1)).symm.sup_eq_top]
     _ = H.filt p := by rw [inf_top_eq]
 
+-- The goal is to show F p = H^{p,n-p} ⊕ F^{p+1} and then use induction to prove the
+-- full Hodge decomposition.
+-- noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)) →ₗ[ℂ] H.filt p :=
+--   (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
+--     (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
 
-#check mem_of_le_of_mem
-#check Submodule.mem_bot
-#check disjoint_iff.mp
-#check LinearMap.ker_coprod_of_disjoint_range
-#check Submodule.ker_subtype
+noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)) →ₗ[ℂ] V :=
+  (H.HodgePiece p).subtype.coprod (H.filt (p+1)).subtype
 
-open LinearMap Submodule
-noncomputable def partialDecompIso (p : ℤ) :
-    (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
-  let i := (Submodule.inclusion (show H.HodgePiece p ≤ H.filt p from inf_le_left))
-  let j := (Submodule.inclusion (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
-  apply LinearEquiv.ofBijective (i.coprod j) ⟨?_, ?_⟩
-  · show Function.Injective (i.coprod j)
-    rw[← ker_eq_bot, ker_coprod_of_disjoint_range i j, ker_inclusion, ker_inclusion, prod_bot]
-    rw[disjoint_iff, range_inclusion, range_inclusion]
-    exact HodgePiece_inf_filt_eq_bot
-  · show Function.Surjective (i.coprod j)
-    rw[← LinearMap.range_eq_top, range_coprod, range_inclusion, range_inclusion]
-    rw[]
+open LinearMap Submodule in
+lemma injective_partialDecompMap : ∀ (p : ℤ), Function.Injective (partialDecompMap H p) := by
+  intro p
+  unfold partialDecompMap
+  rw[← ker_eq_bot, ker_coprod_of_disjoint_range, ker_subtype, ker_subtype, prod_bot]
+  rw[disjoint_iff, range_subtype, range_subtype]
+  exact HodgePiece_inf_filt_eq_bot H p
 
+open LinearMap Submodule in
+lemma partialDecompMap_range_eq_filt : ∀ (p : ℤ), (partialDecompMap H p).range = H.filt p := by
+  intro p
+  unfold partialDecompMap
+  rw[range_coprod, range_subtype, range_subtype]
+  exact HodgePiece_sup_filt_eq_filt H p
 
+noncomputable def partialHodgeDecomp (p : ℤ) :
+  (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
+  rw[← partialDecompMap_range_eq_filt H p]
+  apply LinearEquiv.ofInjective (partialDecompMap H p) (injective_partialDecompMap H p)
 
-
-
-
---GPT generated
-noncomputable def partialDecompIso' (p : ℤ) :
-    (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
-  let f : H.HodgePiece p × H.filt (p + 1) →ₗ[ℂ] H.filt p :=
-    (Submodule.inclusion
-      (show H.HodgePiece p ≤ H.filt p from inf_le_left)).coprod
-      (Submodule.inclusion
-        (H.isHodge.decreasing (show p ≤ p + 1 by omega)))
-  have hcompl : IsCompl (H.filt (p + 1)) (H.filtBar (H.weight - p)) := by
-    simpa only [show H.weight + 1 - (p + 1) = H.weight - p by omega] using
-      H.isHodge.is_compl (p + 1)
-  have hle : H.filt (p + 1) ≤ H.filt p :=
-    H.isHodge.decreasing (by omega)
-  have hsup : H.HodgePiece p ⊔ H.filt (p + 1) = H.filt p := by
-    change H.filt p ⊓ H.filtBar (H.weight - p) ⊔ H.filt (p + 1) = H.filt p
-    rw [inf_sup_assoc_of_le _ hle, sup_comm, hcompl.sup_eq_top, inf_top_eq]
-  have hdisj : Disjoint (H.HodgePiece p) (H.filt (p + 1)) :=
-    hcompl.disjoint.symm.mono_left inf_le_right
-  refine LinearEquiv.ofBijective f ⟨?_, ?_⟩
-  · -- Injectivity: disjointness of the summands forces the kernel to be zero.
-    apply (LinearMap.ker_eq_bot).mp
-    rw [LinearMap.ker_eq_bot']
-    rintro ⟨x, y⟩ hxy
-    have hsum : (x : V) + (y : V) = 0 := congrArg Subtype.val hxy
-    have hx : (x : V) = 0 := Submodule.disjoint_def.mp hdisj x x.property (by
-      have heq : (x : V) = -(y : V) := eq_neg_of_add_eq_zero_left hsum
-      rw [heq]
-      exact (H.filt (p + 1)).neg_mem y.property)
-    have hy : (y : V) = 0 := by simpa [hx] using hsum
-    exact Prod.ext (Subtype.ext hx) (Subtype.ext hy)
-  · -- Surjectivity: the supremum equality expresses every element as a sum.
-    intro z
-    have hz : (z : V) ∈ H.HodgePiece p ⊔ H.filt (p + 1) := by
-      rw [hsup]
-      exact z.property
-    obtain ⟨x, hx, y, hy, hxy⟩ := Submodule.mem_sup.mp hz
-    exact ⟨(⟨x, hx⟩, ⟨y, hy⟩), Subtype.ext hxy⟩
+noncomputable def Hodge_decomp_iso : V ≃ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
+  let b : ℤ := Classical.choose H.isHodge.bounded_below
+  have hb : H.filt b = ⊥ := Classical.choose_spec H.isHodge.bounded_below
+  induction b using Int.leInductionDown
 
 
 
-#check DirectSum.coeLinearMap_of
-#check DirectSum.IsInternal
-#check DirectSum.isInternal_biSup_submodule_of_iSupIndep
-#check DirectSum.isInternal_submodule_iff_iSupIndep_and_iSup_eq_top
-#check DirectSum.isInternal_submodule_of_iSupIndep_of_iSup_eq_top
-#check sSupIndep
-#check iSupIndep_map_orderIso_iff
-#check iSupIndep.linearEquiv
-#check Pairwise
-#check Function.onFun
-#check Submodule.completeLattice
-#check Order.Frame
-#check Subtype.restrict
-#check LinearMap.range_eq_map
-#check Submodule.map
-#check DirectSum.setToSet
-#check Set.univ
-#check DirectSum.lsetToSet
-#check Set.Iic
-#check DirectSum.of
-#check DirectSum.unique
-#check DirectSum.component
-#check DirectSum.map
-#check inf_sup_assoc_of_le
-#check IsModularLattice
-#check IsModularLattice (Submodule ℂ V)
-
-
-
-
-
---lemma partial_Hodge_decomp : ∀ (p : ℤ), H.filt p = (H.HodgePiece p ⊕ H.filt (p+1)) := by
-
-
-
-
-
-noncomputable def invDecompMap : (⨁ (p : ℤ), H.HodgePiece p) →ₗ[ℂ] ℂ ⊗[A] V :=
-  DirectSum.coeLinearMap H.HodgePiece
-
-noncomputable def maptest (p : ℤ) : (⨁ (r : Set.Ici p), H.HodgePiece r) →ₗ[ℂ] ℂ ⊗[A] V :=
-  DirectSum.coeLinearMap (fun r : Set.Ici p ↦ H.HodgePiece r)
-
-
--- GPT generated
-noncomputable def toFiltration (p : ℤ) :
-    (⨁ r : Set.Ici p, H.HodgePiece r) →ₗ[ℂ] H.filt p :=
-  DirectSum.toModule ℂ _ _ (fun r ↦
-    Submodule.inclusion
-      (show H.HodgePiece r ≤ H.filt p from
-        inf_le_left.trans (H.isHodge.decreasing r.property)))
-
-
-
-
-def inc (p : ℤ) : Set.Ici p → ℤ := fun p ↦ p
-
-def inc' (p : ℤ) : (⨁ (r : Set.Ici p), H.HodgePiece r) →ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
-  intro i
-  --DirectSum.setToSet H.HodgePiece (Set.Iic p) (Set.univ) (Set.subset_univ _)
-
-theorem test : ∀ (p : ℤ), (invDecompMap H)'' (⨁ (r : Set.Ici p), H.HodgePiece r) = H.filt p := by
-
-
-
-
-/-
-lemma invDecompMap_equiv : (⨁ (p : ℤ), H.HodgePiece p) ≃ₗ[ℂ] ℂ ⊗[A] V := by
-  have : Pairwise (Function.onFun Disjoint H.HodgePiece) :=
-    fun ?_ ?_ hpq ↦ disjoint_iff.mpr (hodge_piece_inf_eq_bot H hpq)
-  apply iSupIndep.linearEquiv
-  have : iSupIndep H.HodgePiece := iSupIndep_iff_pairwiseDisjoint.2 this
-
-
-
-noncomputable def PureHodgeStructure.decomp : ℂ ⊗[A] V ≃ₗ[ℂ] ⨁ (p : ℤ), H.HodgePiece p := by
-  apply (iSupIndep.linearEquiv ?_ ?_).symm
-  change iSupIndep H.HodgePiece
-  · rw[iSupIndep_iff_pairwiseDisjoint]
--/
-
-
-
-#check DirectSum.coeLinearMap
 
 end HodgeDecomposition
 
