@@ -200,10 +200,25 @@ noncomputable def partialHodgeDecomp (p : ℤ) :
   rw[← partialDecompMap_range_eq_filt H p]
   apply LinearEquiv.ofInjective (partialDecompMap H p) (injective_partialDecompMap H p)
 
-noncomputable def Hodge_decomp_iso : V ≃ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
+
+noncomputable def Hodge_decomp_aux (p : ℤ) :
+  (⨁ (q : ℤ) (h : q ≥ p), H.HodgePiece q) ≃ₗ[ℂ] H.filt p := by
+  induction p using Int.leInductionDown with
+  | ind p ih =>
+    have : (⨁ (q : ℤ) (h : q ≥ p), H.HodgePiece q)
+      = H.HodgePiece p ⊕ ⨁ (q : ℤ) (h : q ≥ p + 1), H.HodgePiece q := by
+        rw[DirectSum.addEquivProdSubtype _ _ _]
+        simp
+    rw[this]
+    refine' LinearEquiv.trans _ (partialHodgeDecomp H p)
+    exact LinearEquiv.prodCongr (LinearEquiv.refl _) ih
+
+
+
+noncomputable def Hodge_decomp : V ≃ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
   let b : ℤ := Classical.choose H.isHodge.bounded_below
   have hb : H.filt b = ⊥ := Classical.choose_spec H.isHodge.bounded_below
-  induction b using Int.leInductionDown
+  induction b using Int.leInductionDown with
 
 
 
