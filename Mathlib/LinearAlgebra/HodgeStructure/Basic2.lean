@@ -148,11 +148,30 @@ section HodgeDecomposition
 open scoped DirectSum
 
 variable {V : Type*} [AddCommGroup V] [Module ℂ V] [IsNoetherian ℂ V]
-variable (H : PureCHodgeStructure V)
-
---theorem GradedPiece_iso_HodgePiece : ∀ (p : ℤ), H.GradedPiece p ≃ₗ[ℂ] H.HodgePiece p := sorry
+variable [H : PureCHodgeStructure V]
 
 
+lemma HodgePiece_bounded_below : ∃ (p : ℤ), ∀ (r : ℤ), r < p → H.HodgePiece r = ⊥ := by
+  obtain ⟨p, hp⟩ := H.isHodge.bounded_below_bar
+  use H.weight - p
+  intro r hr
+  rw[eq_bot_iff]
+  calc
+    H.HodgePiece r = H.filt r ⊓ H.filtBar (H.weight - r) := by rfl
+    _ ≤ H.filtBar (H.weight - r)  := inf_le_right
+    _ ≤ H.filtBar p := H.isHodge.decreasing_bar (by omega)
+    _ = ⊥ := hp
+
+lemma HodgePiece_bounded_above : ∃ (p : ℤ), ∀ (r : ℤ), r > p → H.HodgePiece r = ⊥ := by
+  obtain ⟨p, hp⟩ := H.isHodge.bounded_below
+  use p
+  intro r hr
+  rw[eq_bot_iff]
+  calc
+    H.HodgePiece r = H.filt r ⊓ H.filtBar (H.weight - r) := by rfl
+    _ ≤ H.filt r := inf_le_left
+    _ ≤ H.filt p := H.isHodge.decreasing (by omega)
+    _ = ⊥ := hp
 
 lemma HodgePiece_inf_filt_eq_bot : ∀ (p : ℤ), (H.HodgePiece p) ⊓ (H.filt (p + 1)) = ⊥ := by
   intro p
@@ -181,45 +200,46 @@ noncomputable def partialDecompMap (p : ℤ) : (H.HodgePiece p × H.filt (p + 1)
   (H.HodgePiece p).subtype.coprod (H.filt (p+1)).subtype
 
 open LinearMap Submodule in
-lemma injective_partialDecompMap : ∀ (p : ℤ), Function.Injective (partialDecompMap H p) := by
+lemma injective_partialDecompMap : ∀ (p : ℤ), Function.Injective (partialDecompMap (V := V) p) := by
   intro p
   unfold partialDecompMap
   rw[← ker_eq_bot, ker_coprod_of_disjoint_range, ker_subtype, ker_subtype, prod_bot]
   rw[disjoint_iff, range_subtype, range_subtype]
-  exact HodgePiece_inf_filt_eq_bot H p
+  exact HodgePiece_inf_filt_eq_bot p
 
 open LinearMap Submodule in
-lemma partialDecompMap_range_eq_filt : ∀ (p : ℤ), (partialDecompMap H p).range = H.filt p := by
+lemma partialDecompMap_range_eq_filt : ∀ (p : ℤ), (partialDecompMap p).range = H.filt p := by
   intro p
   unfold partialDecompMap
   rw[range_coprod, range_subtype, range_subtype]
-  exact HodgePiece_sup_filt_eq_filt H p
+  exact HodgePiece_sup_filt_eq_filt p
 
 noncomputable def partialHodgeDecomp (p : ℤ) :
   (H.HodgePiece p × H.filt (p + 1)) ≃ₗ[ℂ] H.filt p := by
-  rw[← partialDecompMap_range_eq_filt H p]
-  apply LinearEquiv.ofInjective (partialDecompMap H p) (injective_partialDecompMap H p)
+  rw[← partialDecompMap_range_eq_filt p]
+  exact LinearEquiv.ofInjective (partialDecompMap p) (injective_partialDecompMap p)
 
 
-noncomputable def Hodge_decomp_aux (p : ℤ) :
-  (⨁ (q : ℤ) (h : q ≥ p), H.HodgePiece q) ≃ₗ[ℂ] H.filt p := by
-  induction p using Int.leInductionDown with
-  | ind p ih =>
-    have : (⨁ (q : ℤ) (h : q ≥ p), H.HodgePiece q)
-      = H.HodgePiece p ⊕ ⨁ (q : ℤ) (h : q ≥ p + 1), H.HodgePiece q := by
-        rw[DirectSum.addEquivProdSubtype _ _ _]
-        simp
+#check DirectSum.lof
+#check Subsingleton
+#check Submodule.bot
+
+noncomputable def Hodge_decomp_iso (p : ℤ) :
+  (⨁ (q : Set.Ici p), H.HodgePiece q) ≃ₗ[ℂ] H.filt p := by
+  let b₀ := Classical.choose (HodgePiece_bounded_above (H := H)) + 1
+  have hb₀ (q : ℤ) (hq : b₀ ≤ q) : H.HodgePiece q = ⊥ :=
+    Classical.choose_spec (HodgePiece_bounded_above) q (by omega)
+  let b := max p b₀
+  have hb (q : ℤ) (hq : b ≤ q) : H.HodgePiece q = ⊥ :=
+    hb₀ q ((le_max_right p b₀).trans hq)
+  have hp : p ≤ b := le_max_left p b₀
+  induction p, hp using Int.leInductionDown (m := b) with
+  | base =>
+    have : (⨁ (q : Set.Ici b), H.HodgePiece q) ≃ₗ[ℂ] H.HodgePiece b := by
+      rw[DirectSum.isoOfEq]
     rw[this]
-    refine' LinearEquiv.trans _ (partialHodgeDecomp H p)
-    exact LinearEquiv.prodCongr (LinearEquiv.refl _) ih
-
-
-
-noncomputable def Hodge_decomp : V ≃ₗ[ℂ] (⨁ (p : ℤ), H.HodgePiece p) := by
-  let b : ℤ := Classical.choose H.isHodge.bounded_below
-  have hb : H.filt b = ⊥ := Classical.choose_spec H.isHodge.bounded_below
-  induction b using Int.leInductionDown with
-
+    exact partialHodgeDecomp b
+  | pred n hn ih => sorry
 
 
 
@@ -264,7 +284,7 @@ instance TrivialHodgeStructure (A : Type*) [CommRing A] [Algebra A ℝ] [Faithfu
   isHodge := TrivialFiltIsHodge V
 
 
-/-- The Tate twise of a pure Hodge Structure `H` by an integer `r` is a Hodge structure
+/-- The Tate twist of a pure Hodge Structure `H` by an integer `r` is a Hodge structure
 on the same underlying module of H, with a shifted filtration and weight -/
 abbrev PureHodgeStructure.Twist {A : Type*} [CommRing A] [Algebra A ℝ] [FaithfulSMul A ℝ]
   {V : Type*} [AddCommGroup V] [Module A V] [IsNoetherian A V]
