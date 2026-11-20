@@ -222,7 +222,7 @@ noncomputable def partialHodgeDecomp (p : ℤ) :
 
 #check DirectSum.lof
 #check Subsingleton
-#check Submodule.bot
+#check DirectSum.addEquivProdDirectSum
 
 noncomputable def Hodge_decomp_iso (p : ℤ) :
   (⨁ (q : Set.Ici p), H.HodgePiece q) ≃ₗ[ℂ] H.filt p := by
@@ -236,10 +236,21 @@ noncomputable def Hodge_decomp_iso (p : ℤ) :
   induction p, hp using Int.leInductionDown (m := b) with
   | base =>
     have : (⨁ (q : Set.Ici b), H.HodgePiece q) ≃ₗ[ℂ] H.HodgePiece b := by
-      rw[DirectSum.isoOfEq]
-    rw[this]
-    exact partialHodgeDecomp b
-  | pred n hn ih => sorry
+      sorry
+    exact partialHodgeDecomp (H := H) b
+  | pred n hn ih =>
+    have : (⨁ (q : Set.Ici (n - 1)), H.HodgePiece q) ≃ₗ[ℂ] H.HodgePiece (n - 1) × (⨁ (q : Set.Ici n), H.HodgePiece q) := by
+      have h : Set.Ici (n - 1) = insert (n - 1) (Set.Ici n) := by
+        ext q
+        simp only [Set.mem_Ici, Set.mem_insert_iff]
+        omega
+      rw[h]
+      exact (DirectSum.lequivCongrLeft (R := ℂ)
+        (Set.subtypeInsertEquivOption (t := Set.Ici n) (x := n - 1)
+          (by simp only [Set.mem_Ici]; omega))).trans
+        (DirectSum.lequivProdDirectSum ℂ)
+    refine this.trans (((LinearEquiv.refl ℂ (H.HodgePiece (n - 1))).prodCongr ih).trans ?_)
+    simpa only [sub_add_cancel] using partialHodgeDecomp (H := H) (n - 1)
 
 
 
